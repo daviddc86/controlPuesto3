@@ -51,7 +51,9 @@ function App() {
       // Agrupar los datos por fecha en un objeto similar al que usábamos en LocalStorage
       const grouped = {};
       data.forEach(item => {
-        // Formateamos la fecha de la base de datos (YYYY-MM-DD) a formato ES (DD/MM/YYYY)
+        // Protección: si por algún motivo no hay fecha válida, saltar al siguiente
+        if (!item.fecha) return;
+
         const [year, month, day] = item.fecha.split('-');
         const dateKey = `${day}/${month}/${year}`;
 
@@ -59,8 +61,8 @@ function App() {
         grouped[dateKey].push({
           id: item.id,
           user: item.usuario,
-          timeRange: `${item.hora_inicio.slice(0,5)} - ${item.hora_fin.slice(0,5)}`,
-          durationMs: item.duracion_segundos * 1000
+          timeRange: `${item.hora_inicio ? item.hora_inicio.slice(0, 5) : '00:00'} - ${item.hora_fin ? item.hora_fin.slice(0, 5) : '00:00'}`,
+          durationMs: (item.duracion_segundos || 0) * 1000
         });
       });
 
@@ -109,12 +111,12 @@ function App() {
       const { error } = await supabase
         .from('registros_caca')
         .insert([
-          { 
-            usuario: currentUser, 
-            fecha: dateString, 
-            hora_inicio: startTimeString, 
-            hora_fin: endTimeString, 
-            duracion_segundos: durationSeconds 
+          {
+            usuario: currentUser,
+            fecha: dateString,
+            hora_inicio: startTimeString,
+            hora_fin: endTimeString,
+            duracion_segundos: durationSeconds
           }
         ]);
 
@@ -126,7 +128,7 @@ function App() {
       setStartTime(null);
       setTimeDisplay("00:00:00");
       setStatusText(`Sesión de ${currentUser} guardada con éxito en la nube.`);
-      
+
       // Forzar recarga del histórico
       await fetchHistory();
 
@@ -159,18 +161,18 @@ function App() {
 
         {/* Selector de Usuario */}
         <div className="user-selector">
-          <button 
+          <button
             className={`user-btn ${currentUser === 'Vir' ? 'active' : ''}`}
-            data-user="Vir" 
+            data-user="Vir"
             onClick={() => selectUser('Vir')}
             disabled={isActive && currentUser !== 'Vir'}
           >
             <span className="avatar">👩‍💻</span>
             <span>Vir</span>
           </button>
-          <button 
-            className={`user-btn ${currentUser === 'Ainoha' ? 'active' : ''}`} 
-            data-user="Ainoha" 
+          <button
+            className={`user-btn ${currentUser === 'Ainoha' ? 'active' : ''}`}
+            data-user="Ainoha"
             onClick={() => selectUser('Ainoha')}
             disabled={isActive && currentUser !== 'Ainoha'}
           >
@@ -183,7 +185,7 @@ function App() {
         <div className="control-panel">
           <div className="current-status">{statusText}</div>
           <div className="timer">{timeDisplay}</div>
-          
+
           <div className="action-buttons">
             <button className="btn btn-start" onClick={startSession} disabled={!currentUser || isActive}>
               🚀 Iniciar Operación
@@ -207,7 +209,7 @@ function App() {
               Object.keys(history).map(date => {
                 const records = history[date];
                 const totals = { Vir: { count: 0, ms: 0 }, Ainoha: { count: 0, ms: 0 } };
-                
+
                 records.forEach(r => {
                   if (totals[r.user]) {
                     totals[r.user].count++;

@@ -294,3 +294,56 @@ header p {
   50% { transform: translateY(-6px) rotate(4deg); }
   100% { transform: translateY(0px) rotate(0deg); }
 }
+
+/* Nuevos estilos para la gestión de usuarios dinámicos */
+.add-user-trigger {
+  border-style: dashed;
+  background: transparent;
+  color: #95a5a6;
+}
+
+.add-user-form {
+  display: flex;
+  gap: 10px;
+  background: var(--card-bg);
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 10px var(--shadow);
+  animation: fadeIn 0.3s ease;
+}
+
+.add-user-form input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+}
+
+.add-user-form input:focus {
+  border-color: var(--primary-light);
+}
+
+.btn-save-user {
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  padding: 0 15px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.btn-save-user:hover {
+  background-color: var(--primary-light);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}

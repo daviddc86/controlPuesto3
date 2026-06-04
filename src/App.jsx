@@ -4,13 +4,14 @@ import './App.css'
 
 // Banco de emojis predefinidos para los nuevos usuarios
 const EMOJI_POOL = ['👩‍💻', '👩‍🎨', '👨‍💼', '👩‍🚀', '👨‍🎤', '🕵️‍♂️', '🥷', '🧙‍♂️', '🧛‍♂️', '🤠'];
+const defaultTiemDispaly = "00:00:00";
 
 function App() {
-  const [usersList, setUsersList] = useState([]); // Usuarios dinámicos desde la BD
+  const [usersList, setUsersList] = useState([]); 
   const [currentUser, setCurrentUser] = useState(null);
   const [isActive, setIsActive] = useState(false);
   const [startTime, setStartTime] = useState(null);
-  const [timeDisplay, setTimeDisplay] = useState("00:00:00");
+  const [timeDisplay, setTimeDisplay] = useState(defaultTiemDispaly);
   const [history, setHistory] = useState({});
   const [statusText, setStatusText] = useState("Selecciona quién va a evacuar...");
   
@@ -18,8 +19,10 @@ function App() {
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUserName, setNewUserName] = useState("");
 
+  // 🟢 NUEVO ESTADO: 'time' para ver tiempos, 'wc' para modo discreto
+  const [viewMode, setViewMode] = useState('time'); 
+
   useEffect(() => {
-    // Cargar usuarios e histórico al arrancar
     initApp();
 
     const savedSession = localStorage.getItem('poop_active_session');
@@ -50,7 +53,6 @@ function App() {
     await fetchHistory();
   };
 
-  // Traer los usuarios de Supabase
   const fetchUsers = async () => {
     try {
       const { data, error } = await supabase
@@ -64,7 +66,6 @@ function App() {
     }
   };
 
-  // Traer el histórico de registros
   const fetchHistory = async () => {
     try {
       const { data, error } = await supabase
@@ -96,19 +97,16 @@ function App() {
     }
   };
 
-  // Función para añadir el nuevo usuario a la BD
   const handleAddUserSubmit = async (e) => {
     e.preventDefault();
     const nameTrimmed = newUserName.trim();
     if (!nameTrimmed) return;
 
-    // Verificar si el usuario ya existe localmente para ahorrar peticiones
     if (usersList.some(u => u.nombre.toLowerCase() === nameTrimmed.toLowerCase())) {
       alert("¡Ese usuario ya existe en el Puesto 3!");
       return;
     }
 
-    // Elegir emoji de forma rotativa según el número de usuarios actuales
     const nextEmoji = EMOJI_POOL[usersList.length % EMOJI_POOL.length];
 
     try {
@@ -120,7 +118,7 @@ function App() {
 
       setNewUserName("");
       setShowAddUser(false);
-      await fetchUsers(); // Recargar la lista de botones
+      await fetchUsers(); 
       setStatusText(`¡Bienvenido/a al equipo, ${nameTrimmed}!`);
     } catch (error) {
       alert("Error al crear usuario: " + error.message);
@@ -177,7 +175,7 @@ function App() {
       localStorage.removeItem('poop_active_session');
       setIsActive(false);
       setStartTime(null);
-      setTimeDisplay("00:00:00");
+      setTimeDisplay(defaultTiemDispaly);
       setStatusText(`Sesión de ${currentUser} guardada con éxito.`);
       await fetchHistory();
 
@@ -198,7 +196,6 @@ function App() {
     ].join(':');
   };
 
-  // Helper para buscar qué emoji tiene asignado un usuario en el histórico
   const getUserAvatar = (username) => {
     const userObj = usersList.find(u => u.nombre === username);
     return userObj ? userObj.avatar : '💩';
@@ -212,7 +209,25 @@ function App() {
           <p>Control de productividad cooperativo en la nube</p>
         </header>
 
-        {/* Selector de Usuarios Dinámico */}
+        {/* 🟢 NUEVA SECCIÓN: Botones de modo de visualización */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '15px' }}>
+          <button 
+            className={`clear-btn ${viewMode === 'time' ? 'active-mode' : ''}`}
+            onClick={() => setViewMode('time')}
+            style={{ fontSize: '16px', padding: '6px 12px', borderRadius: '20px', border: viewMode === 'time' ? '1px solid var(--primary)' : '1px solid transparent', background: viewMode === 'time' ? '#fcf8f5' : 'transparent', fontWeight: viewMode === 'time' ? 'bold' : 'normal' }}
+          >
+            ⏱️ Ver Tiempos
+          </button>
+          <button 
+            className={`clear-btn ${viewMode === 'wc' ? 'active-mode' : ''}`}
+            onClick={() => setViewMode('wc')}
+            style={{ fontSize: '16px', padding: '6px 12px', borderRadius: '20px', border: viewMode === 'wc' ? '1px solid var(--primary)' : '1px solid transparent', background: viewMode === 'wc' ? '#fcf8f5' : 'transparent', fontWeight: viewMode === 'wc' ? 'bold' : 'normal' }}
+          >
+            🚽 Modo Discreto
+          </button>
+        </div>
+
+        {/* Selector de Usuarios */}
         <div className="user-selector" style={{ flexWrap: 'wrap' }}>
           {usersList.map(user => (
             <button 
@@ -227,7 +242,6 @@ function App() {
             </button>
           ))}
           
-          {/* Botón para abrir el formulario de añadir usuario */}
           {!isActive && (
             <button className="user-btn add-user-trigger" onClick={() => setShowAddUser(!showAddUser)}>
               <span className="avatar">➕</span>
@@ -236,7 +250,6 @@ function App() {
           )}
         </div>
 
-        {/* Formulario desplegable para nuevo usuario */}
         {showAddUser && (
           <form onSubmit={handleAddUserSubmit} className="add-user-form">
             <input 
@@ -254,7 +267,11 @@ function App() {
         {/* Panel de Control */}
         <div className="control-panel">
           <div className="current-status">{statusText}</div>
-          <div className="timer">{timeDisplay}</div>
+          
+          {/* 🟢 CONDICIONAL: Oculta el cronómetro si el modo discreto está activo */}
+          <div className="timer">
+            {viewMode === 'time' ? timeDisplay : (timeDisplay === defaultTiemDispaly ? 'Trabajando': 'En el Baño')}
+          </div>
           
           <div className="action-buttons">
             <button className="btn btn-start" onClick={startSession} disabled={!currentUser || isActive}>
@@ -279,7 +296,6 @@ function App() {
               Object.keys(history).map(date => {
                 const records = history[date];
                 
-                // Calcular totales diarios dinámicamente según los usuarios que hayan participado ese día
                 const totals = {};
                 records.forEach(r => {
                   if (!totals[r.user]) totals[r.user] = { count: 0, ms: 0 };
@@ -292,18 +308,22 @@ function App() {
                     <div className="day-title">📅 {date}</div>
                     {records.map(r => (
                       <div className="history-item" key={r.id}>
-                        <div className="item-user" style={{ color: currentUser === r.user ? 'var(--accent)' : 'inherit' }}>
+                        <div className="item-user">
                           {getUserAvatar(r.user)} {r.user} 💩
                         </div>
                         <div className="item-stats">
-                          <div><strong>{formatMs(r.durationMs)}</strong></div>
+                          {/* 🟢 CONDICIONAL: Oculta la duración individual del registro */}
+                          <div><strong>{viewMode === 'time' ? formatMs(r.durationMs) : '🚽 Misión'}</strong></div>
                           <div className="item-time">{r.timeRange}</div>
                         </div>
                       </div>
                     ))}
                     <div className="day-summary">
+                      {/* 🟢 CONDICIONAL: Cambia el formato del total de tiempo por el icono del WC */}
                       Resumen: {Object.keys(totals).map(user => 
-                        `${user}: ${totals[user].count}x (⏱️${formatMs(totals[user].ms)})`
+                        viewMode === 'time' 
+                          ? `${user}: ${totals[user].count}x (⏱️${formatMs(totals[user].ms)})`
+                          : `${user}: ${totals[user].count}x (🚽)`
                       ).join(' | ')}
                     </div>
                   </div>

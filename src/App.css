@@ -134,6 +134,13 @@ header p {
   letter-spacing: 2px;
 }
 
+/* 🟢 Clase condicional para el modo discreto */
+.timer.timer-discreto {
+  font-size: 30px !important;
+  letter-spacing: normal; /* Para que las letras del texto no se separen como los números */
+  padding: 8px 0;         /* Un poco de espacio extra */
+}
+
 .action-buttons {
   display: flex;
   gap: 12px;

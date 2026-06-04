@@ -7,20 +7,20 @@ const EMOJI_POOL = ['👩‍💻', '👩‍🎨', '👨‍💼', '👩‍🚀', 
 const defaultTiemDispaly = "00:00:00";
 
 function App() {
-  const [usersList, setUsersList] = useState([]); 
+  const [usersList, setUsersList] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [isActive, setIsActive] = useState(false);
   const [startTime, setStartTime] = useState(null);
   const [timeDisplay, setTimeDisplay] = useState(defaultTiemDispaly);
   const [history, setHistory] = useState({});
   const [statusText, setStatusText] = useState("Selecciona quién va a evacuar...");
-  
+
   // Estados para la creación de nuevos usuarios
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUserName, setNewUserName] = useState("");
 
-  // 🟢 NUEVO ESTADO: 'time' para ver tiempos, 'wc' para modo discreto
-  const [viewMode, setViewMode] = useState('time'); 
+  // 🟢 NUEVO ESTADO: 'time' para ver tiempos, 'wc' para modo discreto (defautl)
+  const [viewMode, setViewMode] = useState('wc');
 
   useEffect(() => {
     initApp();
@@ -78,7 +78,7 @@ function App() {
 
       const grouped = {};
       data.forEach(item => {
-        if (!item.fecha) return; 
+        if (!item.fecha) return;
         const [year, month, day] = item.fecha.split('-');
         const dateKey = `${day}/${month}/${year}`;
 
@@ -86,7 +86,7 @@ function App() {
         grouped[dateKey].push({
           id: item.id,
           user: item.usuario,
-          timeRange: `${item.hora_inicio ? item.hora_inicio.slice(0,5) : '00:00'} - ${item.hora_fin ? item.hora_fin.slice(0,5) : '00:00'}`,
+          timeRange: `${item.hora_inicio ? item.hora_inicio.slice(0, 5) : '00:00'} - ${item.hora_fin ? item.hora_fin.slice(0, 5) : '00:00'}`,
           durationMs: (item.duracion_segundos || 0) * 1000
         });
       });
@@ -118,7 +118,7 @@ function App() {
 
       setNewUserName("");
       setShowAddUser(false);
-      await fetchUsers(); 
+      await fetchUsers();
       setStatusText(`¡Bienvenido/a al equipo, ${nameTrimmed}!`);
     } catch (error) {
       alert("Error al crear usuario: " + error.message);
@@ -161,12 +161,12 @@ function App() {
       const { error } = await supabase
         .from('registros_caca')
         .insert([
-          { 
-            usuario: currentUser, 
-            fecha: dateString, 
-            hora_inicio: startTimeString, 
-            hora_fin: endTimeString, 
-            duracion_segundos: durationSeconds 
+          {
+            usuario: currentUser,
+            fecha: dateString,
+            hora_inicio: startTimeString,
+            hora_fin: endTimeString,
+            duracion_segundos: durationSeconds
           }
         ]);
 
@@ -211,14 +211,14 @@ function App() {
 
         {/* 🟢 NUEVA SECCIÓN: Botones de modo de visualización */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '15px' }}>
-          <button 
+          <button
             className={`clear-btn ${viewMode === 'time' ? 'active-mode' : ''}`}
             onClick={() => setViewMode('time')}
             style={{ fontSize: '16px', padding: '6px 12px', borderRadius: '20px', border: viewMode === 'time' ? '1px solid var(--primary)' : '1px solid transparent', background: viewMode === 'time' ? '#fcf8f5' : 'transparent', fontWeight: viewMode === 'time' ? 'bold' : 'normal' }}
           >
             ⏱️ Ver Tiempos
           </button>
-          <button 
+          <button
             className={`clear-btn ${viewMode === 'wc' ? 'active-mode' : ''}`}
             onClick={() => setViewMode('wc')}
             style={{ fontSize: '16px', padding: '6px 12px', borderRadius: '20px', border: viewMode === 'wc' ? '1px solid var(--primary)' : '1px solid transparent', background: viewMode === 'wc' ? '#fcf8f5' : 'transparent', fontWeight: viewMode === 'wc' ? 'bold' : 'normal' }}
@@ -230,7 +230,7 @@ function App() {
         {/* Selector de Usuarios */}
         <div className="user-selector" style={{ flexWrap: 'wrap' }}>
           {usersList.map(user => (
-            <button 
+            <button
               key={user.id}
               className={`user-btn ${currentUser === user.nombre ? 'active' : ''}`}
               onClick={() => selectUser(user.nombre)}
@@ -241,7 +241,7 @@ function App() {
               <span>{user.nombre}</span>
             </button>
           ))}
-          
+
           {!isActive && (
             <button className="user-btn add-user-trigger" onClick={() => setShowAddUser(!showAddUser)}>
               <span className="avatar">➕</span>
@@ -252,9 +252,9 @@ function App() {
 
         {showAddUser && (
           <form onSubmit={handleAddUserSubmit} className="add-user-form">
-            <input 
-              type="text" 
-              placeholder="Nombre del nuevo recluta..." 
+            <input
+              type="text"
+              placeholder="Nombre del nuevo recluta..."
               value={newUserName}
               onChange={(e) => setNewUserName(e.target.value)}
               maxLength={15}
@@ -267,12 +267,13 @@ function App() {
         {/* Panel de Control */}
         <div className="control-panel">
           <div className="current-status">{statusText}</div>
-          
+
           {/* 🟢 CONDICIONAL: Oculta el cronómetro si el modo discreto está activo */}
-          <div className="timer">
-            {viewMode === 'time' ? timeDisplay : (timeDisplay === defaultTiemDispaly ? 'Trabajando': 'En el Baño')}
+          {/* 🟢 Si viewMode es 'wc', se añade la clase 'timer-discreto' */}
+          <div className={`timer ${viewMode === 'wc' ? 'timer-discreto' : ''}`}>
+            {viewMode === 'time' ? timeDisplay : (timeDisplay === defaultTiemDispaly ? 'En el Puesto' : 'En el Baño')}
           </div>
-          
+
           <div className="action-buttons">
             <button className="btn btn-start" onClick={startSession} disabled={!currentUser || isActive}>
               🚀 Iniciar Operación
@@ -295,7 +296,7 @@ function App() {
             ) : (
               Object.keys(history).map(date => {
                 const records = history[date];
-                
+
                 const totals = {};
                 records.forEach(r => {
                   if (!totals[r.user]) totals[r.user] = { count: 0, ms: 0 };
@@ -319,12 +320,14 @@ function App() {
                       </div>
                     ))}
                     <div className="day-summary">
-                      {/* 🟢 CONDICIONAL: Cambia el formato del total de tiempo por el icono del WC */}
-                      Resumen: {Object.keys(totals).map(user => 
-                        viewMode === 'time' 
-                          ? `${user}: ${totals[user].count}x (⏱️${formatMs(totals[user].ms)})`
-                          : `${user}: ${totals[user].count}x (🚽)`
-                      ).join(' | ')}
+                      Resumen: {Object.keys(totals).map(user => {
+                        const conteo = totals[user].count;
+                        if (viewMode === 'time') {
+                          return `${user}: ${conteo}x (⏱️${formatMs(totals[user].ms)})`;
+                        } else {
+                          return `${user}: ${conteo}x (🚽)`;
+                        }
+                      }).join(' | ')}
                     </div>
                   </div>
                 );

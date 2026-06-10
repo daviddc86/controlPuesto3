@@ -22,6 +22,48 @@ function App() {
   // 🟢 NUEVO ESTADO: 'time' para ver tiempos, 'wc' para modo discreto (defautl)
   const [viewMode, setViewMode] = useState('wc');
 
+  // ... tus otros states arriba ...
+
+  useEffect(() => {
+    // 1. Registrar entrada a la web nada más cargar
+    const registrarEntradaYLatido = async () => {
+      try {
+        // Insertar log de entrada
+        await supabase.from('logs_conexion').insert([{}]);
+
+        // Actualizar la última conexión inmediatamente
+        const ahora = new Date().toISOString();
+        await supabase
+          .from('ultima_conexion')
+          .update({ ultima_conexion: ahora })
+          .eq('id', 1);
+      } catch (err) {
+        console.error("Error en log inicial:", err);
+      }
+    };
+
+    registrarEntradaYLatido();
+
+    // 2. Mantener la base de datos viva actualizando cada 5 segundos
+    const intervalLatido = setInterval(async () => {
+      try {
+        const ahora = new Date().toISOString();
+        await supabase
+          .from('ultima_conexion')
+          .update({ ultima_conexion: ahora })
+          .match({ id: 1 });
+        console.log("💓 Latido enviado a Supabase para evitar pausa.");
+      } catch (err) {
+        console.error("Error en latido:", err);
+      }
+    }, 5000); // 5000 milisegundos = 5 segundos
+
+    // Limpiar el intervalo si se cierra la web
+    return () => clearInterval(intervalLatido);
+  }, []);
+
+  // ... el resto de tus useEffects anteriores siguen igual ...
+
   useEffect(() => {
     initApp();
 
@@ -51,6 +93,7 @@ function App() {
   const initApp = async () => {
     await fetchUsers();
     await fetchHistory();
+    await sincronizarContadorCacas(); // 🟢 ¡Añadido aquí para que calcule y actualice al iniciar!
   };
 
   const fetchUsers = async () => {
@@ -158,7 +201,8 @@ function App() {
     setStatusText("Subiendo datos a la nube... ☁️");
 
     try {
-      const { error } = await supabase
+      // 1. Guardar la sesión de caca actual en la tabla de registros
+      const { error: errorCaca } = await supabase
         .from('registros_caca')
         .insert([
           {
@@ -170,17 +214,55 @@ function App() {
           }
         ]);
 
-      if (error) throw error;
+      if (errorCaca) throw errorCaca;
 
+      // 2. 🟢 TRAER EL TOTAL ACTUAL QUE HAY EN LA TABLA
+      const { data: contadorActual } = await supabase
+        .from('total_cacas')
+        .select('total_acumulado')
+        .limit(1)
+        .single();
+
+      const nuevoTotal = (contadorActual?.total_acumulado || 0) + 1;
+
+      // 3. 🟢 ACTUALIZAR SUMANDO LA NUEVA CACA TERMINADA
+      await supabase
+        .from('total_cacas')
+        .update({ total_acumulado: nuevoTotal })
+        .match({ id: contadorActual?.id || 1 });
+
+      // Limpiar estados locales (Lo que ya tenías)
       localStorage.removeItem('poop_active_session');
       setIsActive(false);
       setStartTime(null);
-      setTimeDisplay(defaultTiemDispaly);
-      setStatusText(`Sesión de ${currentUser} guardada con éxito.`);
+      setTimeDisplay("00:00:00");
+      setStatusText(`Sesión de ${currentUser} guardada. ¡Contador global incrementado! 🎉`);
       await fetchHistory();
 
     } catch (error) {
       alert("Error al guardar en la nube: " + error.message);
+    }
+  };
+
+  // 🟢 FUNCIÓN NUEVA: Cuenta las cacas reales de la tabla de registros y sincroniza el total acumulado
+  const sincronizarContadorCacas = async () => {
+    try {
+      // 1. Contar cuántas filas reales hay en la tabla de registros
+      const { count, error: errorCount } = await supabase
+        .from('registros_caca')
+        .select('*', { count: 'exact', head: true }); // 'head: true' hace que sea súper rápido porque no descarga los datos, solo pide el número
+
+      if (errorCount) throw errorCount;
+
+      // 2. Actualizar el total acumulado en la tabla 'total_cacas' con el conteo real
+      await supabase
+        .from('total_cacas')
+        .update({ total_acumulado: count || 0 })
+        .match({ id: 1 }); // O .match({}) si quieres actualizar todas las filas que haya
+
+      console.log(`📊 Contador sincronizado al iniciar. Total real: ${count}`);
+    } catch (error) {
+      console.error("Error al sincronizar el contador inicial:", error.message);
     }
   };
 

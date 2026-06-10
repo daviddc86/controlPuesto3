@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Enviar Latido
         run: |
-          curl -X POST "https://lpepyawwwydlpklmdmft.supabase.co/rest/v1/logs_conexion" \
+          curl -X POST "https://yidlijflttmrlqtoxfqb.supabase.co/rest/v1/logs_conexion" \
           -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
           -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
           -H "Content-Type: application/json" \

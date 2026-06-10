@@ -17,4 +17,4 @@ jobs:
           -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
           -H "Content-Type: application/json" \
           -d '{}'
-          echo "Latido enviado con éxito. Proyecto a salvo de congelación."
+          echo "Latido enviado con éxito. Proyecto a salvo de congelación." 
